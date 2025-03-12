@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command: ["sh", "-c", "until nc -z postgres 5432; do echo waiting for database; sleep 5; done;"]
+      containers:
+        - name: my-app
+          image: pes2ug21cs021abhishek/myapp:latest-v1
+          ports:
+            - containerPort: 8081
+          env:
+            - name: DATABASE_URL
+              value: "host=postgres user=postgres password=example dbname=postgres port=5432 sslmode=disable"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+spec:
+  type: NodePort
+  ports:
+    - port: 8081
+      targetPort: 8081  
+      nodePort: 30081   
+  selector:
+    app: my-app
+
